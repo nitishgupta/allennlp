@@ -47,7 +47,6 @@ class Configure(Subcommand):
 def _run_wizard(args: argparse.Namespace) -> None:
     app = make_app(args.include_package)
     CORS(app)
-
     http_server = WSGIServer(('0.0.0.0', args.port), app)
     print(f"serving Config Explorer at http://localhost:{args.port}")
     http_server.serve_forever()
