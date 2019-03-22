@@ -54,6 +54,7 @@ class BasicTransitionFunction(TransitionFunction[GrammarBasedState]):
                  encoder_output_dim: int,
                  action_embedding_dim: int,
                  input_attention: Attention,
+                 input_attention_activation: Activation = None,
                  activation: Activation = Activation.by_name('relu')(),
                  predict_start_type_separately: bool = True,
                  num_start_types: int = None,
@@ -62,6 +63,7 @@ class BasicTransitionFunction(TransitionFunction[GrammarBasedState]):
                  num_layers: int = 1) -> None:
         super().__init__()
         self._input_attention = input_attention
+        self._input_attention_activation = input_attention_activation
         self._add_action_bias = add_action_bias
         self._activation = activation
         self._num_layers = num_layers
@@ -403,10 +405,19 @@ class BasicTransitionFunction(TransitionFunction[GrammarBasedState]):
         method on the main parser module can call it on the initial hidden state, to simplify the
         logic in ``take_step``.
         """
+        # print(query)
+        # print(encoder_outputs)
         # (group_size, question_length)
         question_attention_weights = self._input_attention(query,
                                                            encoder_outputs,
                                                            encoder_output_mask)
+        # print(question_attention_weights)
+        if self._input_attention_activation is not None:
+            question_attention_weights = self._input_attention_activation(question_attention_weights)
+
+        # print(question_attention_weights)
+        # print()
+
         # (group_size, encoder_output_dim)
         attended_question = util.weighted_sum(encoder_outputs, question_attention_weights)
         return attended_question, question_attention_weights

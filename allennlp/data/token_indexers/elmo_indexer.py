@@ -39,7 +39,7 @@ class ELMoCharacterMapper:
     end_of_sentence_character = 257  # <end sentence>
     beginning_of_word_character = 258  # <begin word>
     end_of_word_character = 259  # <end word>
-    padding_character = 260 # <padding>
+    padding_character = 260  # <padding>
 
     beginning_of_sentence_characters = _make_bos_eos(
             beginning_of_sentence_character,

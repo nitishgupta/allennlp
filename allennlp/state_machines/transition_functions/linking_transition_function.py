@@ -99,8 +99,14 @@ class LinkingTransitionFunction(BasicTransitionFunction):
         group_size = len(state.batch_indices)
         actions = state.get_valid_actions()
 
+        # print(len(state.batch_indices))
+
         batch_results: Dict[int, List[Tuple[int, Any, Any, Any, List[int]]]] = defaultdict(list)
         for group_index in range(group_size):
+            batch_idx = state.batch_indices[group_index]
+            # List[ProductionRule]
+            possible_actions = state.possible_actions[batch_idx]
+
             instance_actions = actions[group_index]
             predicted_action_embedding = predicted_action_embeddings[group_index]
             embedded_actions: List[int] = []
@@ -111,6 +117,7 @@ class LinkingTransitionFunction(BasicTransitionFunction):
 
             if 'global' in instance_actions:
                 action_embeddings, output_action_embeddings, embedded_actions = instance_actions['global']
+
                 # This is just a matrix product between a (num_actions, embedding_dim) matrix and an
                 # (embedding_dim, 1) matrix.
                 embedded_action_logits = action_embeddings.mm(predicted_action_embedding.unsqueeze(-1)).squeeze(-1)
@@ -118,6 +125,10 @@ class LinkingTransitionFunction(BasicTransitionFunction):
 
             if 'linked' in instance_actions:
                 linking_scores, type_embeddings, linked_actions = instance_actions['linked']
+
+                # print([possible_actions[a][0] for a in linked_actions])
+                # print(attention_weights[group_index])
+
                 action_ids = embedded_actions + linked_actions
                 # (num_question_tokens, 1)
                 linked_action_logits = linking_scores.mm(attention_weights[group_index].unsqueeze(-1)).squeeze(-1)
@@ -158,6 +169,8 @@ class LinkingTransitionFunction(BasicTransitionFunction):
             # This is now the total score for each state after taking each action.  We're going to
             # sort by this later, so it's important that this is the total score, not just the
             # score for the current action.
+            # print(state.score[group_index])
+            # print(current_log_probs)
             log_probs = state.score[group_index] + current_log_probs
             batch_results[state.batch_indices[group_index]].append((group_index,
                                                                     log_probs,

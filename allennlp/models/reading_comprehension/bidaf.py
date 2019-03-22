@@ -248,8 +248,11 @@ class BidirectionalAttentionFlow(Model):
         best_span = self.get_best_span(span_start_logits, span_end_logits)
 
         output_dict = {
+                "embedded_question": embedded_question,
                 "encoded_question": encoded_question,
+                "embedded_passage": embedded_passage,
                 "encoded_passage": encoded_passage,
+                "passage_vector": question_passage_vector,
                 "question_mask": question_mask,
                 "passage_mask": passage_mask,
                 "final_merged_passage": final_merged_passage,
