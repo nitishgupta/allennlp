@@ -212,13 +212,25 @@ class BasicTransitionFunction(TransitionFunction[GrammarBasedState]):
 
         batch_results: Dict[int, List[Tuple[int, Any, Any, Any, List[int]]]] = defaultdict(list)
         for group_index in range(group_size):
+            batch_index = state.batch_indices[group_index]
+            actionstr2actionidx = state.extras[batch_index]
+
             instance_actions = actions[group_index]
+
             predicted_action_embedding = predicted_action_embeddings[group_index]
             action_embeddings, output_action_embeddings, action_ids = instance_actions['global']
             # This is just a matrix product between a (num_actions, embedding_dim) matrix and an
             # (embedding_dim, 1) matrix.
             action_logits = action_embeddings.mm(predicted_action_embedding.unsqueeze(-1)).squeeze(-1)
             current_log_probs = torch.nn.functional.log_softmax(action_logits, dim=-1)
+
+            '''
+            actionidxs = instance_actions['global'][2]
+            if len(actionidxs) > 1:
+                print([actionstr2actionidx[x] for x in instance_actions['global'][2]])
+                print(f"Logits:{action_logits}")
+                print(f"LogProbs:{current_log_probs}")
+            '''
 
             # This is now the total score for each state after taking each action.  We're going to
             # sort by this later, so it's important that this is the total score, not just the

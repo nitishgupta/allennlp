@@ -544,6 +544,7 @@ class Vocabulary(Registrable):
                 pretrained_set = None
             token_counts = list(counter[namespace].items())
             token_counts.sort(key=lambda x: x[1], reverse=True)
+
             try:
                 max_vocab = max_vocab_size[namespace]
             except KeyError:

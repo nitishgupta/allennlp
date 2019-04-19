@@ -21,6 +21,7 @@ def get_best_span(span_start_logits: torch.Tensor, span_end_logits: torch.Tensor
     # the span ends before it starts.
     span_log_mask = torch.triu(torch.ones((passage_length, passage_length),
                                           device=device)).log()
+
     valid_span_log_probs = span_log_probs + span_log_mask
 
     # Here we take the span matrix and flatten it, then find the best span using argmax.  We

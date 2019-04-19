@@ -86,6 +86,7 @@ class ConstrainedBeamSearch:
             for batch_index, action_history in zip(grouped_state.batch_indices,
                                                    grouped_state.action_history):
                 allowed_actions.append(self._allowed_transitions[batch_index][tuple(action_history)])
+
             for next_state in transition_function.take_step(grouped_state,
                                                             max_actions=self._per_node_beam_size,
                                                             allowed_actions=allowed_actions):
