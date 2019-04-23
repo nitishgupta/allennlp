@@ -10,6 +10,7 @@ from typing import Dict, Optional, List, Tuple, Union, Iterable, Any, NamedTuple
 
 import torch
 import torch.optim.lr_scheduler
+from torch import autograd
 
 from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
@@ -261,7 +262,12 @@ class Trainer(TrainerBase):
             batch = batch_group[0]
             batch = nn_util.move_to_device(batch, self._cuda_devices[0])
             output_dict = self.model(**batch)
-
+            # with autograd.detect_anomaly():
+            #     output_dict = self.model(**batch)
+            #     loss = output_dict["loss"]
+            #     loss += self.model.get_regularization_penalty()
+            #     loss.backward()
+            #     return loss
         try:
             loss = output_dict["loss"]
             if for_training:
@@ -272,6 +278,7 @@ class Trainer(TrainerBase):
                                    " 'loss' key in the output of model.forward(inputs).")
             loss = None
 
+        del output_dict
         return loss
 
     def _train_epoch(self, epoch: int) -> Dict[str, float]:
@@ -328,7 +335,19 @@ class Trainer(TrainerBase):
 
             train_loss += loss.item()
 
+            ''' added 
+            for name, param in self.model.named_parameters():
+                param_norm = torch.norm(param.view(-1, )).cpu()
+                if param.grad is not None:
+                    grad_norm = torch.norm(param.grad.view(-1, )).cpu()
+                else:
+                    grad_norm = None
+                print(f"{name} :: pnorm: {param_norm} :: gradnorm: {grad_norm}")
+            '''
+
             batch_grad_norm = self.rescale_gradients()
+
+            # print(f"\n  GRAD NORM: {batch_grad_norm} \n")
 
             # This does nothing if batch_num_total is None or you are using a
             # scheduler which doesn't update per batch.
@@ -352,6 +371,8 @@ class Trainer(TrainerBase):
                                                        update_norm / (param_norm + 1e-7))
             else:
                 self.optimizer.step()
+
+            del loss
 
             # Update moving averages
             if self._moving_average is not None:
