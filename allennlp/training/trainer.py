@@ -8,6 +8,8 @@ import datetime
 import traceback
 from typing import Dict, Optional, List, Tuple, Union, Iterable, Any, NamedTuple
 
+import gc
+
 import torch
 import torch.optim.lr_scheduler
 from torch import autograd
@@ -319,6 +321,7 @@ class Trainer(TrainerBase):
         train_generator_tqdm = Tqdm.tqdm(train_generator,
                                          total=num_training_batches)
         cumulative_batch_size = 0
+        gc_iterations = 0
         for batch_group in train_generator_tqdm:
             batches_this_epoch += 1
             self._batch_num_total += 1
@@ -373,6 +376,10 @@ class Trainer(TrainerBase):
                 self.optimizer.step()
 
             del loss
+            gc_iterations += 1
+            if gc_iterations % 100 == 0:
+                gc.collect()
+
 
             # Update moving averages
             if self._moving_average is not None:
@@ -498,7 +505,11 @@ class Trainer(TrainerBase):
 
         for epoch in range(epoch_counter, self._num_epochs):
             epoch_start_time = time.time()
+            gc.collect()
+
             train_metrics = self._train_epoch(epoch)
+
+            gc.collect()
 
             # get peak of memory usage
             if 'cpu_memory_MB' in train_metrics:
