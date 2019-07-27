@@ -264,11 +264,16 @@ class Trainer(TrainerBase):
             batch = batch_group[0]
             batch = nn_util.move_to_device(batch, self._cuda_devices[0])
             output_dict = self.model(**batch)
-            # with autograd.detect_anomaly():
+            # if for_training:
+            #     with autograd.detect_anomaly():
+            #         output_dict = self.model(**batch)
+            #         loss = output_dict["loss"]
+            #         loss += self.model.get_regularization_penalty()
+            #         loss.backward()
+            #         return loss
+            # else:
             #     output_dict = self.model(**batch)
             #     loss = output_dict["loss"]
-            #     loss += self.model.get_regularization_penalty()
-            #     loss.backward()
             #     return loss
         try:
             loss = output_dict["loss"]
@@ -349,7 +354,6 @@ class Trainer(TrainerBase):
             '''
 
             batch_grad_norm = self.rescale_gradients()
-
             # print(f"\n  GRAD NORM: {batch_grad_norm} \n")
 
             # This does nothing if batch_num_total is None or you are using a
