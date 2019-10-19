@@ -231,6 +231,7 @@ class SpanConstituencyParser(Model):
             "tokens": [meta["tokens"] for meta in metadata],
             "pos_tags": [meta.get("pos_tags") for meta in metadata],
             "num_spans": num_spans,
+            "metadata": metadata,
         }
         if span_labels is not None:
             loss = sequence_cross_entropy_with_logits(logits, span_labels, span_mask)
