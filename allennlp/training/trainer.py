@@ -29,6 +29,8 @@ from allennlp.training.trainer_base import TrainerBase
 from allennlp.training import util as training_util
 from allennlp.training.moving_average import MovingAverage
 
+import gc
+
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -60,7 +62,8 @@ class Trainer(TrainerBase):
                  should_log_parameter_statistics: bool = True,
                  should_log_learning_rate: bool = False,
                  log_batch_size_period: Optional[int] = None,
-                 moving_average: Optional[MovingAverage] = None) -> None:
+                 moving_average: Optional[MovingAverage] = None,
+                 gc_freq: Optional[int] = None) -> None:
         """
         A trainer for doing supervised learning. It just takes a labeled dataset
         and a ``DataIterator``, and uses the supplied ``Optimizer`` to learn the weights
@@ -244,6 +247,10 @@ class Trainer(TrainerBase):
         if histogram_interval is not None:
             self._tensorboard.enable_activation_logging(self.model)
 
+        # This is used to keep track of training steps to call gc.collect() frequently
+        self.num_steps = 0
+        self.gc_freq = gc_freq
+
     def rescale_gradients(self) -> Optional[float]:
         return training_util.rescale_gradients(self.model, self._grad_norm)
 
@@ -269,7 +276,9 @@ class Trainer(TrainerBase):
                 raise RuntimeError("The model you are trying to optimize does not contain a"
                                    " 'loss' key in the output of model.forward(inputs).")
             loss = None
-
+        # <><> Added by Nitish
+        del output_dict
+        # <><> end -- Added by Nitish
         return loss
 
     def _train_epoch(self, epoch: int) -> Dict[str, float]:
@@ -350,6 +359,14 @@ class Trainer(TrainerBase):
                                                        update_norm / (param_norm + 1e-7))
             else:
                 self.optimizer.step()
+
+            # <><> Added by Nitish
+            del loss
+            self.num_steps += 1
+            if self.gc_freq is not None:
+                if self.num_steps % self.gc_freq == 0:
+                    gc.collect()
+            # <><> end - Added by Nitish
 
             # Update moving averages
             if self._moving_average is not None:
@@ -476,6 +493,7 @@ class Trainer(TrainerBase):
         for epoch in range(epoch_counter, self._num_epochs):
             epoch_start_time = time.time()
             train_metrics = self._train_epoch(epoch)
+            gc.collect()
 
             # get peak of memory usage
             if 'cpu_memory_MB' in train_metrics:
@@ -722,6 +740,7 @@ class Trainer(TrainerBase):
         should_log_parameter_statistics = params.pop_bool("should_log_parameter_statistics", True)
         should_log_learning_rate = params.pop_bool("should_log_learning_rate", False)
         log_batch_size_period = params.pop_int("log_batch_size_period", None)
+        gc_freq = params.pop_int("gc_freq", None)
 
         params.assert_empty(cls.__name__)
         return cls(model, optimizer, iterator,
@@ -744,4 +763,5 @@ class Trainer(TrainerBase):
                    should_log_parameter_statistics=should_log_parameter_statistics,
                    should_log_learning_rate=should_log_learning_rate,
                    log_batch_size_period=log_batch_size_period,
-                   moving_average=moving_average)
+                   moving_average=moving_average,
+                   gc_freq=gc_freq)
