@@ -365,6 +365,7 @@ class Trainer(TrainerBase):
             self.num_steps += 1
             if self.gc_freq is not None:
                 if self.num_steps % self.gc_freq == 0:
+                    print("\nGC Collect\n")
                     gc.collect()
             # <><> end - Added by Nitish
 
@@ -492,6 +493,7 @@ class Trainer(TrainerBase):
 
         for epoch in range(epoch_counter, self._num_epochs):
             epoch_start_time = time.time()
+            gc.collect()
             train_metrics = self._train_epoch(epoch)
             gc.collect()
 
