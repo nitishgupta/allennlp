@@ -277,8 +277,13 @@ class Trainer(TrainerBase):
                                    " 'loss' key in the output of model.forward(inputs).")
             loss = None
         # <><> Added by Nitish
-        del output_dict
-        # <><> end -- Added by Nitish
+        self.num_steps += 1
+        if self.gc_freq is not None:
+            if self.num_steps % self.gc_freq == 0:
+                logger.info("GC Collect")
+                gc.collect()
+            del output_dict
+        # <><> end - Added by Nitish
         return loss
 
     def _train_epoch(self, epoch: int) -> Dict[str, float]:
@@ -359,15 +364,6 @@ class Trainer(TrainerBase):
                                                        update_norm / (param_norm + 1e-7))
             else:
                 self.optimizer.step()
-
-            # <><> Added by Nitish
-            del loss
-            self.num_steps += 1
-            if self.gc_freq is not None:
-                if self.num_steps % self.gc_freq == 0:
-                    print("\nGC Collect\n")
-                    gc.collect()
-            # <><> end - Added by Nitish
 
             # Update moving averages
             if self._moving_average is not None:
@@ -493,8 +489,10 @@ class Trainer(TrainerBase):
 
         for epoch in range(epoch_counter, self._num_epochs):
             epoch_start_time = time.time()
+            logger.info("GC Collect")
             gc.collect()
             train_metrics = self._train_epoch(epoch)
+            logger.info("GC Collect")
             gc.collect()
 
             # get peak of memory usage
