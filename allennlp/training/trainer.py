@@ -249,7 +249,7 @@ class Trainer(TrainerBase):
 
         # This is used to keep track of training steps to call gc.collect() frequently
         self.num_steps = 0
-        self.gc_freq = gc_freq
+        self.gc_freq = None if gc_freq == 0 else gc_freq
 
     def rescale_gradients(self) -> Optional[float]:
         return training_util.rescale_gradients(self.model, self._grad_norm)
